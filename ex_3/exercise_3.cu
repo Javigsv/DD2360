@@ -5,6 +5,7 @@
 #define NUM_ITERATIONS 100
 #define BLOCK_SIZE 64
 #define SEED 787
+#define MARGIN 1e-6
 
 typedef struct Particle {
     float3 position;
@@ -25,6 +26,12 @@ void initParticle(Particle* p) {
     p->position = make_float3(x, y, z);
     p->velocity = make_float3(vx, vy, vz);
 }
+
+double cpuSecond() {
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    return ((double)tp.tv_sec + (double)tp.tv_usec*1.e-6);
+}   
 
 __host__ __device__ float gen_random(int seed, int p, int i) {
     return (seed*p+i) % NUM_PARTICLES;
@@ -59,16 +66,19 @@ __device__ void timeStepGPU(Particle* p, float dt, int iter) {
     float3 vel;
     float randomV;
     int id = blockIdx.x*blockDim.x+threadIdx.x;
-    pos = p[id].position;
-    x = pos.x;
-    y = pos.y;
-    z = pos.z;
-    randomV = gen_random(SEED, id, iter);
-    p[id].velocity.x = randomV*0.2;
-    p[id].velocity.y = randomV*0.5;
-    p[id].velocity.z = randomV*0.3;
-    vel = p[id].velocity;
-    p[id].position = make_float3(x+vel.x*dt, y+vel.y*dt, z+vel.z*dt);
+    if(id < NUM_PARTICLES) 
+    {
+        pos = p[id].position;
+        x = pos.x;
+        y = pos.y;
+        z = pos.z;
+        randomV = gen_random(SEED, id, iter);
+        p[id].velocity.x = randomV*0.2;
+        p[id].velocity.y = randomV*0.5;
+        p[id].velocity.z = randomV*0.3;
+        vel = p[id].velocity;
+        p[id].position = make_float3(x+vel.x*dt, y+vel.y*dt, z+vel.z*dt);
+    }
 }
 
 __global__ void executeGPU(Particle* p, float dt) {
@@ -83,39 +93,39 @@ int main(int argc, char* argv[]){
     Particle* particlesGPU;
     Particle* solutionGPU = (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
 
-    struct timeval t1;
-    struct timeval t2;
-    suseconds_t timeCPU;
-    suseconds_t timeGPU;
+    double t1;
+    double t2;
+    double timeCPU;
+    double timeGPU;
 
     srand((unsigned) time(NULL)); 
 
-    gettimeofday(&t1, NULL);
+    t1 = cpuSecond();
     cudaMalloc(&particlesGPU, NUM_PARTICLES*sizeof(Particle));
     cudaMemcpy(particlesGPU, particles, NUM_PARTICLES*sizeof(Particle), cudaMemcpyHostToDevice);
-    gettimeofday(&t2, NULL);
-    timeGPU = t2.tv_usec - t1.tv_usec;
+    t2 = cpuSecond();
+    timeGPU = t2- t1;
 
     printf("Init: (%f, %f, %f)\n", particles[0].position.x, particles[0].position.y, particles[0].position.z);
     //CPU
     printf("Computing in the CPU...\n");
-    gettimeofday(&t1, NULL);
+    t1 = cpuSecond();
     for(i = 0; i < NUM_ITERATIONS; i++) {
         timeStepCPU(particles, 1, i);
     }
-    gettimeofday(&t2, NULL);
-    timeCPU = t2.tv_usec - t1.tv_usec;
+    t2 = cpuSecond();
+    timeCPU = t2-t1;
     //printf("%d: (%f, %f, %f)\n", i, particles[0].position.x, particles[0].position.y, particles[0].position.z);
     printf("Done! %ld\n", timeCPU);
 
     //GPU
     printf("Computing in the GPU...\n");
-    gettimeofday(&t1, NULL);
+    t1 = cpuSecond();
     executeGPU<<<(NUM_PARTICLES+BLOCK_SIZE-1)/BLOCK_SIZE, BLOCK_SIZE>>>(particlesGPU, 1);
     cudaDeviceSynchronize();
     cudaMemcpy(solutionGPU, particlesGPU, NUM_PARTICLES*sizeof(Particle), cudaMemcpyDeviceToHost);
-    gettimeofday(&t2, NULL);
-    timeGPU += t2.tv_usec - t1.tv_usec;
+    t2 = cpuSecond();
+    timeGPU += t2-t1;
     //printf("%d: (%f, %f, %f)\n", i, solutionGPU[0].position.x, solutionGPU[0].position.y, solutionGPU[0].position.z);
     printf("Done! %ld\n", timeGPU);
 
@@ -127,7 +137,7 @@ int main(int argc, char* argv[]){
         float xGPU = solutionGPU[i].position.x;
         float yGPU = solutionGPU[i].position.y;
         float zGPU = solutionGPU[i].position.z;
-        if(xCPU != xGPU | yCPU != yGPU | zCPU != zGPU) {
+        if(xCPU - xGPU > MARGIN | yCPU - yGPU > MARGIN | zCPU - zGPU > MARGIN) {
             printf("CPU: (%f, %f, %f)\n", xCPU, yCPU, zCPU);
             printf("GPU: (%f, %f, %f)\n", xGPU, yGPU, zGPU);
             printf("Something is bad %d\n", i);

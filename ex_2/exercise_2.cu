@@ -2,6 +2,13 @@
 #include <sys/time.h>
 #define ARRAY_SIZE 1000000
 #define TPB 256
+#define MARGIN 1e-6
+
+double cpuSecond() {
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    return ((double)tp.tv_sec + (double)tp.tv_usec*1.e-6);
+}
 
 float* saxpy(float* x, float* y, float a) {
     int i = 0;
@@ -28,10 +35,10 @@ int main() {
     float* d_x;
     float* d_y;
     float a = 10;
-    struct timeval t1;
-    struct timeval t2;
-    suseconds_t timeCPU;
-    suseconds_t timeGPU;
+    double t1;
+    double t2;
+    double timeCPU;
+    double timeGPU;
 
     printf("Filling arrays...\n");
     for(int i = 0; i < ARRAY_SIZE; i++)
@@ -42,10 +49,10 @@ int main() {
     printf("Done!\n");
 
     printf("Computing in CPU...\n");
-    gettimeofday(&t1, NULL);
+    t1 = cpuSecond();
     res = saxpy(x, y, a);
-    gettimeofday(&t2, NULL);
-    timeCPU = t2.tv_usec - t1.tv_usec;
+    t2 = cpuSecond();
+    timeCPU = t2 - t1;
     printf("Done! %ld\n", timeCPU);
 
     
@@ -55,11 +62,11 @@ int main() {
     cudaMalloc(&d_y, ARRAY_SIZE*sizeof(float));
     cudaMemcpy(d_x, x, ARRAY_SIZE*sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_y, y, ARRAY_SIZE*sizeof(float), cudaMemcpyHostToDevice);
-    gettimeofday(&t1, NULL);
+    t1 = cpuSecond();
     saxpy_gpu<<<(ARRAY_SIZE+TPB-1)/TPB, TPB>>>(res_gpu, d_x, d_y, a);
     cudaDeviceSynchronize();
-    gettimeofday(&t2, NULL);
-    timeGPU = t2.tv_usec - t1.tv_usec;
+    t2 = cpuSecond();
+    timeGPU = t2 - t1;
     printf("Done! %ld\n", timeGPU);
 
     cudaMemcpy(res2, res_gpu, ARRAY_SIZE*sizeof(float), cudaMemcpyDeviceToHost);
@@ -67,7 +74,7 @@ int main() {
 
     for(int i = 0; i<ARRAY_SIZE; i++) {
         //printf("%d -> %f \t %f\n", i, res[i], res2[i]);
-        if(res[i] != res2[i]) {
+        if(res[i] - res2[i] > MARGIN) {
             printf("This is bad, %d\n", i);
             exit(0);
         }
