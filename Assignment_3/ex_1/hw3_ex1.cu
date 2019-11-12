@@ -6,6 +6,7 @@
 
 #define BLOCK_SIZE  16
 #define HEADER_SIZE 122
+#define BLOCK_SIZE_SH 18
 
 typedef unsigned char BYTE;
 
@@ -273,6 +274,8 @@ void cpu_gaussian(int width, int height, float *image, float *image_out)
  */
 __global__ void gpu_gaussian(int width, int height, float *image, float *image_out)
 {
+    __shared__ float sh_block[BLOCK_SIZE_SH * BLOCK_SIZE_SH];
+
     float gaussian[9] = { 1.0f / 16.0f, 2.0f / 16.0f, 1.0f / 16.0f,
                           2.0f / 16.0f, 4.0f / 16.0f, 2.0f / 16.0f,
                           1.0f / 16.0f, 2.0f / 16.0f, 1.0f / 16.0f };
@@ -280,14 +283,21 @@ __global__ void gpu_gaussian(int width, int height, float *image, float *image_o
     int index_x = blockIdx.x * blockDim.x + threadIdx.x;
     int index_y = blockIdx.y * blockDim.y + threadIdx.y;
     
-    if (index_x < (width - 2) && index_y < (height - 2))
-    {
-        int offset_t = index_y * width + index_x;
-        int offset   = (index_y + 1) * width + (index_x + 1);
-        
-        image_out[offset] = gpu_applyFilter(&image[offset_t],
-                                            width, gaussian, 3);
+    if (index_x < width && index_y < height) {
+        int id_sh = threadIdx.y * BLOCK_SIZE_SH + threadIdx.x;
+        sh_block[id_sh] = image[index_y * width + index_x]
+        __syncthreads();
+
+        if (index_x < (width - 2) && index_y < (height - 2))
+        {
+            int offset_t = index_y * width + index_x;
+            int offset   = (index_y + 1) * width + (index_x + 1);
+            
+            image_out[offset] = gpu_applyFilter(sh_block[id_sh],
+                                                width, gaussian, 3);
+        }
     }
+
 }
 
 /**
@@ -329,6 +339,8 @@ __global__ void gpu_sobel(int width, int height, float *image, float *image_out)
     // Implement the GPU version of the Sobel filter //
     ///////////////////////////////////////////////////
 
+    __shared__ float sh_block[BLOCK_SIZE_SH * BLOCK_SIZE_SH];
+
     float sobel_x[9] = { 1.0f,  0.0f, -1.0f,
         2.0f,  0.0f, -2.0f,
         1.0f,  0.0f, -1.0f };
@@ -339,17 +351,23 @@ __global__ void gpu_sobel(int width, int height, float *image, float *image_out)
     int index_x = blockIdx.x * blockDim.x + threadIdx.x;
     int index_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (index_x < (width - 2) && index_y < (height - 2)) {
-        int offset_t = index_y * width;
-        int offset   = (index_y + 1) * width;
-
-        float gx = gpu_applyFilter(&image[offset_t + index_x], width, sobel_x, 3);
-        float gy = gpu_applyFilter(&image[offset_t + index_x], width, sobel_y, 3);
-        
-        // Note: The output can be negative or exceed the max. color value
-        // of 255. We compensate this afterwards while storing the file.
-        image_out[offset + (index_x + 1)] = sqrtf(gx * gx + gy * gy);
+    if (index_x < width && index_y < height) {
+        int id_sh = threadIdx.y * BLOCK_SIZE_SH + threadIdx.x;
+        sh_block[id_sh] = image[index_y * width + index_x]
+        __syncthreads();
+        if (index_x < (width - 2) && index_y < (height - 2)) {
+            int offset_t = index_y * width;
+            int offset   = (index_y + 1) * width;
+    
+            float gx = gpu_applyFilter(sh_block[id_sh], width, sobel_x, 3);
+            float gy = gpu_applyFilter(sh_block[id_sh], width, sobel_y, 3);
+            
+            // Note: The output can be negative or exceed the max. color value
+            // of 255. We compensate this afterwards while storing the file.
+            image_out[offset + (index_x + 1)] = sqrtf(gx * gx + gy * gy);
+        }
     }
+
 }
 
 int main(int argc, char **argv)
