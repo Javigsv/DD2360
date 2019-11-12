@@ -288,7 +288,34 @@ __global__ void gpu_gaussian(int width, int height, float *image, float *image_o
         int id_sh_center = (threadIdx.y + 1) * BLOCK_SIZE_SH + (threadIdx.x + 1);
         sh_block[id_sh_center] = image[index_y * width + index_x];
         if(threadIdx.y == 0) { //First row
-            sh_block[id_sh] = image[(index_y - 1) * width + index_x];
+            sh_block[threadIdx.x+1] = image[(index_y - 1) * width + index_x];
+        }
+        if(threadIdx.y == BLOCK_SIZE-1) { //Last row
+            int id = (BLOCK_SIZE-1)*BLOCK_SIZE_SH+threadIdx.x+1;
+            sh_block[id] = image[(index_y + 1) * width + index_x];
+        }
+        if(threadIdx.x == 0) { //First col
+            sh_block[(threadIdx.y+1) * BLOCK_SIZE_SH] = image[index_y * width + index_x-1];
+        }
+        if(threadIdx.x == BLOCK_SIZE-1) { //Last col
+            int id = (threadIdx.y+1)*BLOCK_SIZE_SH+BLOCK_SIZE_SH-1;
+            sh_block[id] = image[index_y * width + index_x+1];
+        }
+        if(threadIdx.y == 0 && threadIdx.x == 0) { //Upper left
+            int id = 0;
+            sh_block[id] = image[(index_y - 1) * width + index_x-1];
+        }
+        if(threadIdx.y == 0 && threadIdx.x == BLOCK_SIZE-1) { //Upper right
+            int id = BLOCK_SIZE_SH-1;
+            sh_block[id] = image[(index_y - 1) * width + index_x+1];
+        }
+        if(threadIdx.y == BLOCK_SIZE-1 && threadIdx.x == 0) { //Lower left
+            int id = (BLOCK_SIZE_SH-1) * BLOCK_SIZE_SH;
+            sh_block[id] = image[(index_y + 1) * width + index_x-1];
+        }
+        if(threadIdx.y == BLOCK_SIZE-1 && threadIdx.x == BLOCK_SIZE-1) { //Lower right
+            int id = (BLOCK_SIZE_SH-1) * BLOCK_SIZE_SH + (BLOCK_SIZE_SH-1);
+            sh_block[id] = image[(index_y + 1) * width + index_x+1];
         }
         __syncthreads();
 
@@ -360,7 +387,34 @@ __global__ void gpu_sobel(int width, int height, float *image, float *image_out)
         int id_sh_center = (threadIdx.y + 1) * BLOCK_SIZE_SH + (threadIdx.x + 1);
         sh_block[id_sh_center] = image[index_y * width + index_x];
         if(threadIdx.y == 0) { //First row
-            sh_block[id_sh] = image[(index_y - 1) * width + index_x];
+            sh_block[threadIdx.x+1] = image[(index_y - 1) * width + index_x];
+        }
+        if(threadIdx.y == BLOCK_SIZE-1) { //Last row
+            int id = (BLOCK_SIZE-1)*BLOCK_SIZE_SH+threadIdx.x+1;
+            sh_block[id] = image[(index_y + 1) * width + index_x];
+        }
+        if(threadIdx.x == 0) { //First col
+            sh_block[(threadIdx.y+1) * BLOCK_SIZE_SH] = image[index_y * width + index_x-1];
+        }
+        if(threadIdx.x == BLOCK_SIZE-1) { //Last col
+            int id = (threadIdx.y+1)*BLOCK_SIZE_SH+BLOCK_SIZE_SH-1;
+            sh_block[id] = image[index_y * width + index_x+1];
+        }
+        if(threadIdx.y == 0 && threadIdx.x == 0) { //Upper left
+            int id = 0;
+            sh_block[id] = image[(index_y - 1) * width + index_x-1];
+        }
+        if(threadIdx.y == 0 && threadIdx.x == BLOCK_SIZE-1) { //Upper right
+            int id = BLOCK_SIZE_SH-1;
+            sh_block[id] = image[(index_y - 1) * width + index_x+1];
+        }
+        if(threadIdx.y == BLOCK_SIZE-1 && threadIdx.x == 0) { //Lower left
+            int id = (BLOCK_SIZE_SH-1) * BLOCK_SIZE_SH;
+            sh_block[id] = image[(index_y + 1) * width + index_x-1];
+        }
+        if(threadIdx.y == BLOCK_SIZE-1 && threadIdx.x == BLOCK_SIZE-1) { //Lower right
+            int id = (BLOCK_SIZE_SH-1) * BLOCK_SIZE_SH + (BLOCK_SIZE_SH-1);
+            sh_block[id] = image[(index_y + 1) * width + index_x+1];
         }
         __syncthreads();
         if (index_x < (width - 2) && index_y < (height - 2)) {
