@@ -285,7 +285,7 @@ __global__ void gpu_gaussian(int width, int height, float *image, float *image_o
     
     if (index_x < width && index_y < height) {
         int id_sh = threadIdx.y * BLOCK_SIZE_SH + threadIdx.x;
-        sh_block[id_sh] = image[index_y * width + index_x]
+        sh_block[id_sh] = image[index_y * width + index_x];
         __syncthreads();
 
         if (index_x < (width - 2) && index_y < (height - 2))
@@ -293,7 +293,7 @@ __global__ void gpu_gaussian(int width, int height, float *image, float *image_o
             int offset_t = index_y * width + index_x;
             int offset   = (index_y + 1) * width + (index_x + 1);
             
-            image_out[offset] = gpu_applyFilter(sh_block[id_sh],
+            image_out[offset] = gpu_applyFilter(&sh_block[id_sh],
                                                 width, gaussian, 3);
         }
     }
@@ -353,14 +353,14 @@ __global__ void gpu_sobel(int width, int height, float *image, float *image_out)
 
     if (index_x < width && index_y < height) {
         int id_sh = threadIdx.y * BLOCK_SIZE_SH + threadIdx.x;
-        sh_block[id_sh] = image[index_y * width + index_x]
+        sh_block[id_sh] = image[index_y * width + index_x];
         __syncthreads();
         if (index_x < (width - 2) && index_y < (height - 2)) {
             int offset_t = index_y * width;
             int offset   = (index_y + 1) * width;
     
-            float gx = gpu_applyFilter(sh_block[id_sh], width, sobel_x, 3);
-            float gy = gpu_applyFilter(sh_block[id_sh], width, sobel_y, 3);
+            float gx = gpu_applyFilter(&sh_block[id_sh], width, sobel_x, 3);
+            float gy = gpu_applyFilter(&sh_block[id_sh], width, sobel_y, 3);
             
             // Note: The output can be negative or exceed the max. color value
             // of 255. We compensate this afterwards while storing the file.
