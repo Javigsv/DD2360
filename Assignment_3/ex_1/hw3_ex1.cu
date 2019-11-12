@@ -294,7 +294,7 @@ __global__ void gpu_gaussian(int width, int height, float *image, float *image_o
             int offset   = (index_y + 1) * width + (index_x + 1);
             
             image_out[offset] = gpu_applyFilter(&sh_block[id_sh],
-                                                width, gaussian, 3);
+                                                BLOCK_SIZE_SH, gaussian, 3);
         }
     }
 
@@ -359,8 +359,8 @@ __global__ void gpu_sobel(int width, int height, float *image, float *image_out)
             int offset_t = index_y * width;
             int offset   = (index_y + 1) * width;
     
-            float gx = gpu_applyFilter(&sh_block[id_sh], width, sobel_x, 3);
-            float gy = gpu_applyFilter(&sh_block[id_sh], width, sobel_y, 3);
+            float gx = gpu_applyFilter(&sh_block[id_sh], BLOCK_SIZE_SH, sobel_x, 3);
+            float gy = gpu_applyFilter(&sh_block[id_sh], BLOCK_SIZE_SH, sobel_y, 3);
             
             // Note: The output can be negative or exceed the max. color value
             // of 255. We compensate this afterwards while storing the file.
