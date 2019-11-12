@@ -141,7 +141,7 @@ int main(int argc, char* argv[]){
         float xGPU = solutionGPU[i].position.x;
         float yGPU = solutionGPU[i].position.y;
         float zGPU = solutionGPU[i].position.z;
-        if(xCPU - xGPU > MARGIN | yCPU - yGPU > MARGIN | zCPU - zGPU > MARGIN) {
+        if(fabs(xCPU - xGPU) > MARGIN | fabs(yCPU - yGPU) > MARGIN | fabs(zCPU - zGPU) > MARGIN) {
             printf("CPU: (%f, %f, %f)\n", xCPU, yCPU, zCPU);
             printf("GPU: (%f, %f, %f)\n", xGPU, yGPU, zGPU);
             printf("Something is bad %d\n", i);
