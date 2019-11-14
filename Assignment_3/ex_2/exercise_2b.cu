@@ -93,11 +93,13 @@ int main(int argc, char* argv[]){
     NUM_PARTICLES = atoi(argv[1]);
     BLOCK_SIZE = 256;//atoi(argv[2]);
     printf("%d particles\nBlock Size = %d\n", NUM_PARTICLES, BLOCK_SIZE);
-    // printf("Aqui");
+
     Particle* particles = (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
+    
     Particle* particlesGPU;
-    Particle* solutionGPU; // = (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
-    cudaMallocHost((void**)&solutionGPU, NUM_PARTICLES*sizeof(Particle));
+    cudaMallocManaged((void**)&particlesGPU, NUM_PARTICLES*sizeof(Particle));
+    //Particle* solutionGPU; // = (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
+    //cudaMallocHost((void**)&solutionGPU, NUM_PARTICLES*sizeof(Particle));
 
     double t1;
     double t2;
@@ -105,6 +107,12 @@ int main(int argc, char* argv[]){
     double timeGPU;
 
     srand((unsigned) time(NULL)); 
+
+    for(int i = 0; i < NUM_PARTICLES; i++) {
+	initParticle(&particlesGPU[i]);
+    }
+
+    memcpy((void*)particles, (void*)particlesGPU, NUM_PARTICLES*sizeof(Particle));
 
     /*t1 = cpuSecond();
     cudaMalloc(&particlesGPU, NUM_PARTICLES*sizeof(Particle));
@@ -115,13 +123,13 @@ int main(int argc, char* argv[]){
     //GPU
     printf("Computing in the GPU...\n");
     t1 = cpuSecond();
-    cudaMalloc(&particlesGPU, NUM_PARTICLES*sizeof(Particle));
-    cudaMemcpy(particlesGPU, particles, NUM_PARTICLES*sizeof(Particle), cudaMemcpyHostToDevice);
+    //cudaMalloc(&particlesGPU, NUM_PARTICLES*sizeof(Particle));
+    //cudaMemcpy(particlesGPU, particles, NUM_PARTICLES*sizeof(Particle), cudaMemcpyHostToDevice);
     for(int i = 0; i < NUM_ITERATIONS; i++) {
-        if (i > 0)
-            cudaMemcpy(particlesGPU, solutionGPU, NUM_PARTICLES*sizeof(Particle), cudaMemcpyHostToDevice);
+        //if (i > 0)
+          //  cudaMemcpy(particlesGPU, solutionGPU, NUM_PARTICLES*sizeof(Particle), cudaMemcpyHostToDevice);
         timeStepGPU<<<(NUM_PARTICLES+BLOCK_SIZE-1)/BLOCK_SIZE, BLOCK_SIZE>>>(particlesGPU, 1, i, NUM_PARTICLES);
-        cudaMemcpy(solutionGPU, particlesGPU, NUM_PARTICLES*sizeof(Particle), cudaMemcpyDeviceToHost);
+        //cudaMemcpy(solutionGPU, particlesGPU, NUM_PARTICLES*sizeof(Particle), cudaMemcpyDeviceToHost);
     }
     //executeGPU<<<(NUM_PARTICLES+BLOCK_SIZE-1)/BLOCK_SIZE, BLOCK_SIZE>>>(particlesGPU, 1, NUM_PARTICLES);
     cudaDeviceSynchronize();
@@ -147,9 +155,9 @@ int main(int argc, char* argv[]){
         float xCPU = particles[i].position.x;
         float yCPU = particles[i].position.y;
         float zCPU = particles[i].position.z;
-        float xGPU = solutionGPU[i].position.x;
-        float yGPU = solutionGPU[i].position.y;
-        float zGPU = solutionGPU[i].position.z;
+        float xGPU = particlesGPU[i].position.x;
+        float yGPU = particlesGPU[i].position.y;
+        float zGPU = particlesGPU[i].position.z;
         if(fabs(xCPU - xGPU) > MARGIN | fabs(yCPU - yGPU) > MARGIN | fabs(zCPU - zGPU) > MARGIN) {
             printf("CPU: (%f, %f, %f)\n", xCPU, yCPU, zCPU);
             printf("GPU: (%f, %f, %f)\n", xGPU, yGPU, zGPU);
