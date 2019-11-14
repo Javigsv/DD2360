@@ -91,13 +91,13 @@ __global__ void timeStepGPU(Particle* p, float dt, int iter, int NUM_PARTICLES) 
 
 int main(int argc, char* argv[]){
     NUM_PARTICLES = atoi(argv[1]);
-    BLOCK_SIZE = atoi(argv[2]);
+    BLOCK_SIZE = 256;//atoi(argv[2]);
     printf("%d particles\nBlock Size = %d\n", NUM_PARTICLES, BLOCK_SIZE);
+    // printf("Aqui");
     Particle* particles = (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
-    int i = 0;
     Particle* particlesGPU;
-    Particle* solutionGPU; //= (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
-    cudaMallocHost((void**)solutionGPU, NUM_PARTICLES*sizeof(Particle), cudaHostAllocDefault);
+    Particle* solutionGPU; // = (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
+    cudaHostAlloc((void**)&solutionGPU, NUM_PARTICLES*sizeof(Particle), cudaHostAllocDefault);
 
     double t1;
     double t2;
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]){
     printf("Computing in the GPU...\n");
     t1 = cpuSecond();
     cudaMalloc(&particlesGPU, NUM_PARTICLES*sizeof(Particle));
-        cudaMemcpy(particlesGPU, particles, NUM_PARTICLES*sizeof(Particle), cudaMemcpyHostToDevice);
+    cudaMemcpy(particlesGPU, particles, NUM_PARTICLES*sizeof(Particle), cudaMemcpyHostToDevice);
     for(int i = 0; i < NUM_ITERATIONS; i++) {
         if (i > 0)
             cudaMemcpy(particlesGPU, solutionGPU, NUM_PARTICLES*sizeof(Particle), cudaMemcpyHostToDevice);
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]){
     
     printf("Computing in the CPU...\n");
     t1 = cpuSecond();
-    for(i = 0; i < NUM_ITERATIONS; i++) {
+    for(int i = 0; i < NUM_ITERATIONS; i++) {
         timeStepCPU(particles, 1, i);
     }
     t2 = cpuSecond();
@@ -143,7 +143,7 @@ int main(int argc, char* argv[]){
     printf("Done! %f\n", timeCPU);
 
     printf("Comparing results...\n");
-    for(i = 0; i < NUM_PARTICLES; i++) {
+    for(int i = 0; i < NUM_PARTICLES; i++) {
         float xCPU = particles[i].position.x;
         float yCPU = particles[i].position.y;
         float zCPU = particles[i].position.z;
