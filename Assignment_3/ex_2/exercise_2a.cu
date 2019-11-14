@@ -96,7 +96,8 @@ int main(int argc, char* argv[]){
     Particle* particles = (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
     int i = 0;
     Particle* particlesGPU;
-    Particle* solutionGPU = (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
+    Particle* solutionGPU; //= (Particle*)malloc(NUM_PARTICLES*sizeof(Particle));
+    cudaMallocHost((void**)solutionGPU, NUM_PARTICLES*sizeof(Particle), cudaHostAllocDefault);
 
     double t1;
     double t2;
