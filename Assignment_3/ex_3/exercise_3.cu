@@ -170,7 +170,7 @@ void shared_sgemm(float *C, float *A, float *B, long size)
 }
 
 /* cuBLAS */
-void cublas_sgemm(float *C, float *A, float *B, long size)
+/*void cublas_sgemm(float *C, float *A, float *B, long size)
 {
 	struct timeval t0, t1;
 	float alpha = 1.0;
@@ -187,7 +187,7 @@ void cublas_sgemm(float *C, float *A, float *B, long size)
 	cublasDestroy(handle);
 
 	printf("GPU cuBLAS matmul:\t\t%f ms\n", elapsed(t0, t1));
-}
+}*/
 
 void print_usage(char *program)
 {
@@ -260,8 +260,20 @@ int main(int argc, char *argv[])
 	}
 
 	/* set C on GPU and run cublas */
+	//checkCudaErrors(cudaMemset(d_C, 0, sizeof(float)*size*size));
+	//cublas_sgemm(d_C, d_A, d_B, size);
+	
+	/* run naive gpu gemm */
+	/*checkCudaErrors(cudaMemset(d_C, 0, sizeof(float)*size*size));
+	naive_sgemm(d_C, d_A, d_B, size);
+	checkCudaErrors(cudaMemcpy(C_result, d_C, sizeof(float)*size*size, cudaMemcpyDeviceToHost));
+	compare_matrix(C_result, C_truth, size, THRESHOLD);*/
+	
+	/* run shared */
 	checkCudaErrors(cudaMemset(d_C, 0, sizeof(float)*size*size));
-	cublas_sgemm(d_C, d_A, d_B, size);
+	shared_sgemm(d_C, d_A, d_B, size);
+	checkCudaErrors(cudaMemcpy(C_result, d_C, sizeof(float)*size*size, cudaMemcpyDeviceToHost));
+	compare_matrix(C_result, C_truth, size, THRESHOLD);
 	if (verify) {
 		checkCudaErrors(cudaMemcpy(C_result, d_C, sizeof(float)*size*size, cudaMemcpyDeviceToHost));
 		compare_matrix(C_result, C_truth, size, THRESHOLD);
@@ -269,19 +281,7 @@ int main(int argc, char *argv[])
 	else {
 		checkCudaErrors(cudaMemcpy(C_truth, d_C, sizeof(float)*size*size, cudaMemcpyDeviceToHost));
 	}
-
-	/* run naive gpu gemm */
-	checkCudaErrors(cudaMemset(d_C, 0, sizeof(float)*size*size));
-	naive_sgemm(d_C, d_A, d_B, size);
-	checkCudaErrors(cudaMemcpy(C_result, d_C, sizeof(float)*size*size, cudaMemcpyDeviceToHost));
-	compare_matrix(C_result, C_truth, size, THRESHOLD);
-
-	/* run shared */
-	checkCudaErrors(cudaMemset(d_C, 0, sizeof(float)*size*size));
-	shared_sgemm(d_C, d_A, d_B, size);
-	checkCudaErrors(cudaMemcpy(C_result, d_C, sizeof(float)*size*size, cudaMemcpyDeviceToHost));
-	compare_matrix(C_result, C_truth, size, THRESHOLD);
-
+	
 	/* free */
 	checkCudaErrors(cudaFree(d_A));
 	checkCudaErrors(cudaFree(d_B));
