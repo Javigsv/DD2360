@@ -133,7 +133,8 @@ void shared_sgemm_kernel(float *C, float *A, float *B, long size)
 	float val = 0.0;
 
 	/* TODO declare shared memory with size TILE_SIZE x TILE_SIZE */
-
+	__shared__ float tile_A[TILE_SIZE][TILE_SIZE];
+	__shared__ float tile_B[TILE_SIZE][TILE_SIZE];
 	if (col < size && row < size) {
 		const long local_col = blockIdx.x * TILE_SIZE + threadIdx.x;
 		const long local_row = blockIdx.y * TILE_SIZE + threadIdx.y;
@@ -146,6 +147,7 @@ void shared_sgemm_kernel(float *C, float *A, float *B, long size)
 			/* TODO introduce a pragma directive that can potentially improve performance here */
 			for (long k = 0; k < TILE_SIZE; ++k) {
 				/* TODO Perform multiplication here */
+				val += tile_A[threadIdx.y * size + k] * tile_B[k * size + threadIdx.x];
 			}
 			__syncthreads();
 		}
@@ -168,7 +170,7 @@ void shared_sgemm(float *C, float *A, float *B, long size)
 }
 
 /* cuBLAS */
-void cublas_sgemm(float *C, float *A, float *B, long size)
+/*void cublas_sgemm(float *C, float *A, float *B, long size)
 {
 	struct timeval t0, t1;
 	float alpha = 1.0;
@@ -178,14 +180,14 @@ void cublas_sgemm(float *C, float *A, float *B, long size)
 	cublasCreate(&handle);
 
 	gettimeofday(&t0, NULL);
-	/* TODO fill in the blanks, do C = BA instead of C = AB */
+	// TODO fill in the blanks, do C = BA instead of C = AB
 	cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, , , , , , , , , , , );
 	checkCudaErrors(cudaDeviceSynchronize());
 	gettimeofday(&t1, NULL);
 	cublasDestroy(handle);
 
 	printf("GPU cuBLAS matmul:\t\t%f ms\n", elapsed(t0, t1));
-}
+}*/
 
 void print_usage(char *program)
 {
@@ -259,7 +261,7 @@ int main(int argc, char *argv[])
 
 	/* set C on GPU and run cublas */
 	checkCudaErrors(cudaMemset(d_C, 0, sizeof(float)*size*size));
-	cublas_sgemm(d_C, d_A, d_B, size);
+	//cublas_sgemm(d_C, d_A, d_B, size);
 	if (verify) {
 		checkCudaErrors(cudaMemcpy(C_result, d_C, sizeof(float)*size*size, cudaMemcpyDeviceToHost));
 		compare_matrix(C_result, C_truth, size, THRESHOLD);
