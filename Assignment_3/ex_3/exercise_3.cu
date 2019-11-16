@@ -181,7 +181,7 @@ void cublas_sgemm(float *C, float *A, float *B, long size)
 
 	gettimeofday(&t0, NULL);
 	// TODO fill in the blanks, do C = BA instead of C = AB
-	cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, size, size, size, alpha, A, size, B, size, beta, C, size);
+	cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, size, size, size, &alpha, B, size, A, size, &beta, C, size);
 	checkCudaErrors(cudaDeviceSynchronize());
 	gettimeofday(&t1, NULL);
 	cublasDestroy(handle);
