@@ -240,8 +240,10 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
   hv_coef = -hv_beta * dx / (16*dt);
   int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
   int flux_end = (nx+1)*(nz+1)*NUM_VARS - 1;
+  int end_tend = nx*nz*NUM_VARS - 1;
   //Compute fluxes in the x-direction for each cell
-  #pragma acc parallel loop copyin(state[0:end_state], stencil) copyout(vals, d3_vals, flux[0:flux_end])
+  #pragma acc data copyin(state[0:end_state], stencil) copyout(vals, d3_vals, tend[0:end_tend]) {
+  #pragma acc parallel loop
   for (k=0; k<nz; k++) {
     #pragma acc loop
     for (i=0; i<nx+1; i++) {
@@ -274,9 +276,8 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
     }
   }
 
-  int end_tend = nx*nz*NUM_VARS - 1;
   //Use the fluxes to compute tendencies for each cell
-  #pragma acc parallel loop copyin(flux[0:flux_end]) copyout(tend[0:end_tend])
+  #pragma acc parallel loop
   for (ll=0; ll<NUM_VARS; ll++) {
     #pragma acc loop
     for (k=0; k<nz; k++) {
@@ -288,6 +289,7 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
         tend[indt] = -( flux[indf2] - flux[indf1] ) / dx;
       }
     }
+  }
   }
 }
 
@@ -303,8 +305,10 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
   hv_coef = -hv_beta * dx / (16*dt);
   int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
   int flux_end = (nx+1)*(nz+1)*NUM_VARS - 1;
+  int end_tend = nx*nz*NUM_VARS - 1;
   //Compute fluxes in the x-direction for each cell
-  #pragma acc parallel loop copyin(state[0:end_state], stencil) copyout(vals, d3_vals, flux[0:flux_end])
+  #pragma acc data copyin(state[0:end_state], stencil) copyout(vals, d3_vals, tend[0:end_tend]) {
+  #pragma acc parallel loop
   for (k=0; k<nz+1; k++) {
     #pragma acc loop
     for (i=0; i<nx; i++) {
@@ -337,9 +341,8 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
     }
   }
 
-  int end_tend = nx*nz*NUM_VARS - 1;
   //Use the fluxes to compute tendencies for each cell
-  #pragma acc parallel loop copyin(flux[0:flux_end], state[0:end_state]) copyout(tend[0:end_tend])
+  #pragma acc parallel loop
   for (ll=0; ll<NUM_VARS; ll++) {
     #pragma acc loop
     for (k=0; k<nz; k++) {
@@ -355,6 +358,7 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
         }
       }
     }
+  }
   }
 }
 
