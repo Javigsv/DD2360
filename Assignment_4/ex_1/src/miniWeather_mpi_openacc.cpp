@@ -211,14 +211,10 @@ void semi_discrete_step( double *state_init , double *state_forcing , double *st
     //Compute the time tendencies for the fluid state in the z-direction
     compute_tendencies_z(state_forcing,flux,tend);
   }
-  int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
-  int end_tend = nx*nz*NUM_VARS - 1;
+
   //Apply the tendencies to the fluid state
-  #pragma acc parallel loop copyin(state_init[0:end_state], tend[0:end_tend]) copyout(state_out[0:end_state])
   for (ll=0; ll<NUM_VARS; ll++) {
-    #pragma acc loop
     for (k=0; k<nz; k++) {
-      #pragma acc loop
       for (i=0; i<nx; i++) {
         inds = ll*(nz+2*hs)*(nx+2*hs) + (k+hs)*(nx+2*hs) + i+hs;
         indt = ll*nz*nx + k*nx + i;
@@ -238,16 +234,11 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
   double r,u,w,t,p, stencil[4], d3_vals[NUM_VARS], vals[NUM_VARS], hv_coef;
   //Compute the hyperviscosity coeficient
   hv_coef = -hv_beta * dx / (16*dt);
-  int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
   //Compute fluxes in the x-direction for each cell
-  #pragma acc parallel loop copyin(state[0:end_state], stencil) copyout(vals, d3_vals)
   for (k=0; k<nz; k++) {
-    #pragma acc loop
     for (i=0; i<nx+1; i++) {
       //Use fourth-order interpolation from four cell averages to compute the value at the interface in question
-      #pragma acc loop
       for (ll=0; ll<NUM_VARS; ll++) {
-        #pragma acc loop
         for (s=0; s < sten_size; s++) {
           inds = ll*(nz+2*hs)*(nx+2*hs) + (k+hs)*(nx+2*hs) + i+s;
           stencil[s] = state[inds];
@@ -272,14 +263,10 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
       flux[ID_RHOT*(nz+1)*(nx+1) + k*(nx+1) + i] = r*u*t   - hv_coef*d3_vals[ID_RHOT];
     }
   }
-  int flux_end = (nx+1)*(nz+1)*NUM_VARS - 1;
-  int end_tend = nx*nz*NUM_VARS - 1;
+
   //Use the fluxes to compute tendencies for each cell
-  #pragma acc parallel loop copyin(flux[0:flux_end]) copyout(tend[0:end_tend])
   for (ll=0; ll<NUM_VARS; ll++) {
-    #pragma acc loop
     for (k=0; k<nz; k++) {
-      #pragma acc loop
       for (i=0; i<nx; i++) {
         indt  = ll* nz   * nx    + k* nx    + i  ;
         indf1 = ll*(nz+1)*(nx+1) + k*(nx+1) + i  ;
@@ -300,16 +287,11 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
   double r,u,w,t,p, stencil[4], d3_vals[NUM_VARS], vals[NUM_VARS], hv_coef;
   //Compute the hyperviscosity coeficient
   hv_coef = -hv_beta * dx / (16*dt);
-  int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
   //Compute fluxes in the x-direction for each cell
-  #pragma acc parallel loop copyin(state[0:end_state], stencil) copyout(vals, d3_vals)
   for (k=0; k<nz+1; k++) {
-    #pragma acc loop
     for (i=0; i<nx; i++) {
       //Use fourth-order interpolation from four cell averages to compute the value at the interface in question
-      #pragma acc loop
       for (ll=0; ll<NUM_VARS; ll++) {
-        #pragma acc loop
         for (s=0; s<sten_size; s++) {
           inds = ll*(nz+2*hs)*(nx+2*hs) + (k+s)*(nx+2*hs) + i+hs;
           stencil[s] = state[inds];
@@ -335,14 +317,9 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
     }
   }
 
-  int flux_end = (nx+1)*(nz+1)*NUM_VARS - 1;
-  int end_tend = nx*nz*NUM_VARS - 1;
   //Use the fluxes to compute tendencies for each cell
-  #pragma acc parallel loop copyin(flux[0:flux_end]) copyout(tend[0:end_tend])
   for (ll=0; ll<NUM_VARS; ll++) {
-    #pragma acc loop
     for (k=0; k<nz; k++) {
-      #pragma acc loop
       for (i=0; i<nx; i++) {
         indt  = ll* nz   * nx    + k* nx    + i  ;
         indf1 = ll*(nz+1)*(nx+1) + (k  )*(nx+1) + i;
@@ -367,14 +344,10 @@ void set_halo_values_x( double *state ) {
   //Prepost receives
   ierr = MPI_Irecv(recvbuf_l,hs*nz*NUM_VARS,MPI_DOUBLE, left_rank,0,MPI_COMM_WORLD,&req_r[0]);
   ierr = MPI_Irecv(recvbuf_r,hs*nz*NUM_VARS,MPI_DOUBLE,right_rank,1,MPI_COMM_WORLD,&req_r[1]);
-  int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
-  int end_buff = hs*nz*NUM_VARS - 1;
+
   //Pack the send buffers
-  #pragma acc parallel loop copyin(state[0:end_state]) copyout(sendbuf_l[0:end_buff],sendbuf_r[0:end_buff])
   for (ll=0; ll<NUM_VARS; ll++) {
-    #pragma acc loop
     for (k=0; k<nz; k++) {
-      #pragma acc loop
       for (s=0; s<hs; s++) {
         sendbuf_l[ll*nz*hs + k*hs + s] = state[ll*(nz+2*hs)*(nx+2*hs) + (k+hs)*(nx+2*hs) + hs+s];
         sendbuf_r[ll*nz*hs + k*hs + s] = state[ll*(nz+2*hs)*(nx+2*hs) + (k+hs)*(nx+2*hs) + nx+s];
@@ -392,11 +365,8 @@ void set_halo_values_x( double *state ) {
 
 
   //Unpack the receive buffers
-  #pragma acc parallel loop copyin(recvbuf_l[0:end_buff],recvbuf_r[0:end_buff]) copyout(state[0:end_state])
   for (ll=0; ll<NUM_VARS; ll++) {
-    #pragma acc loop
     for (k=0; k<nz; k++) {
-      #pragma acc loop
       for (s=0; s<hs; s++) {
         state[ll*(nz+2*hs)*(nx+2*hs) + (k+hs)*(nx+2*hs) + s      ] = recvbuf_l[ll*nz*hs + k*hs + s];
         state[ll*(nz+2*hs)*(nx+2*hs) + (k+hs)*(nx+2*hs) + nx+hs+s] = recvbuf_r[ll*nz*hs + k*hs + s];
@@ -406,12 +376,10 @@ void set_halo_values_x( double *state ) {
 
   //Wait for sends to finish
   ierr = MPI_Waitall(2,req_s,MPI_STATUSES_IGNORE);
-  int end_hy_dens = (nz+2*hs) - 1;
+
   if (data_spec_int == DATA_SPEC_INJECTION) {
     if (myrank == 0) {
-      #pragma acc parallel loop copyin(state[0:end_state],hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens]) copyout(state[0:end_state])
       for (k=0; k<nz; k++) {
-        #pragma acc loop
         for (i=0; i<hs; i++) {
           z = (k_beg + k+0.5)*dz;
           if (abs(z-3*zlen/4) <= zlen/16) {
@@ -434,10 +402,7 @@ void set_halo_values_z( double *state ) {
   int          i, ll;
   const double mnt_width = xlen/8;
   double       x, xloc, mnt_deriv;
-  int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
-  #pragma acc parallel loop copyin(state[0:end_state]) copyout(state[0:end_state]) 
   for (ll=0; ll<NUM_VARS; ll++) {
-    #pragma acc loop
     for (i=0; i<nx+2*hs; i++) {
       if (ll == ID_WMOM) {
         state[ll*(nz+2*hs)*(nx+2*hs) + (0      )*(nx+2*hs) + i] = 0.;
