@@ -211,9 +211,10 @@ void semi_discrete_step( double *state_init , double *state_forcing , double *st
     //Compute the time tendencies for the fluid state in the z-direction
     compute_tendencies_z(state_forcing,flux,tend);
   }
-
+  int end_init = (NUM_VARS-1)*(nz+2*hs)*(nx+2*hs) + ((nz-1)+hs)*(nx+2*hs) + (nx-1)+hs
+  int end_tend = (NUM_VARS-1)*nz*nx + (nz-1)*nx + nx-1;
   //Apply the tendencies to the fluid state
-  #pragma acc parallel loop copyin(state_init, tend) copyout(state_out)
+  #pragma acc parallel loop copyin(state_init[0:end_init], tend[0:end_tend]) copyout(state_out[0:end_init])
   for (ll=0; ll<NUM_VARS; ll++) {
     #pragma acc loop
     for (k=0; k<nz; k++) {
