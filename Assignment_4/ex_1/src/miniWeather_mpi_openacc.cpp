@@ -211,8 +211,8 @@ void semi_discrete_step( double *state_init , double *state_forcing , double *st
     //Compute the time tendencies for the fluid state in the z-direction
     compute_tendencies_z(state_forcing,flux,tend);
   }
-  int end_init = (NUM_VARS-1)*(nz+2*hs)*(nx+2*hs) + ((nz-1)+hs)*(nx+2*hs) + (nx-1)+hs
-  int end_tend = (NUM_VARS-1)*nz*nx + (nz-1)*nx + nx-1;
+  int end_init = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
+  int end_tend = nx*nz*NUM_VARS - 1;
   //Apply the tendencies to the fluid state
   #pragma acc parallel loop copyin(state_init[0:end_init], tend[0:end_tend]) copyout(state_out[0:end_init])
   for (ll=0; ll<NUM_VARS; ll++) {
@@ -238,8 +238,9 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
   double r,u,w,t,p, stencil[4], d3_vals[NUM_VARS], vals[NUM_VARS], hv_coef;
   //Compute the hyperviscosity coeficient
   hv_coef = -hv_beta * dx / (16*dt);
+  int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
   //Compute fluxes in the x-direction for each cell
-  #pragma acc parallel loop
+  #pragma acc parallel loop copyin(state[0:end_state], stencil[0:sten_size])
   for (k=0; k<nz; k++) {
     #pragma acc loop
     for (i=0; i<nx+1; i++) {
