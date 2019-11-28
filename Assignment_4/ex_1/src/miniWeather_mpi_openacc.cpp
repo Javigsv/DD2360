@@ -273,7 +273,7 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
       flux[ID_RHOT*(nz+1)*(nx+1) + k*(nx+1) + i] = r*u*t   - hv_coef*d3_vals[ID_RHOT];
     }
   }
-  int flux_end = (nx+1)*(nz+1)*NUM_VARS - 1;
+  
   int end_tend = nx*nz*NUM_VARS - 1;
   //Use the fluxes to compute tendencies for each cell
   #pragma acc parallel loop copyin(flux[0:flux_end]) copyout(tend[0:end_tend])
