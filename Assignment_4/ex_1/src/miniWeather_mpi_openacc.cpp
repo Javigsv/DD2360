@@ -243,7 +243,7 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
   int flux_end = (nx+1)*(nz+1)*NUM_VARS;
   int end_tend = nx*nz*NUM_VARS;
   //Compute fluxes in the x-direction for each cell
-  #pragma acc data copyin(state[0:end_state], stencil, flux[0:flux_end]) copyout(vals, d3_vals, tend[0:end_tend])
+  #pragma acc data copyin(state[0:end_state], stencil) copy(vals, d3_vals, tend[0:end_tend], flux[0:flux_end])
   {
     #pragma acc parallel loop collapse(4) private(inds, r, u, w, t, p)
     for (k=0; k<nz; k++) {
@@ -304,7 +304,7 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
   int flux_end = (nx+1)*(nz+1)*NUM_VARS;
   int end_tend = nx*nz*NUM_VARS;
   //Compute fluxes in the x-direction for each cell
-  #pragma acc data copyin(state[0:end_state], stencil, tend[0:end_tend], flux[0:flux_end]) copyout(vals, d3_vals, tend[0:end_tend])
+  #pragma acc data copyin(state[0:end_state], stencil) copy(vals, d3_vals, tend[0:end_tend], flux[0:flux_end])
   {
       #pragma acc parallel loop collapse(4) private(inds,r,u,w,t,p)
       for (k=0; k<nz+1; k++) {
@@ -389,7 +389,6 @@ void set_halo_values_x( double *state ) {
 
 
   //Unpack the receive buffers
-  //in(recvbuf_l[0:end_buff],recvbuf_r[0:end_buff]) copyout(state[0:end_state])
   #pragma acc parallel loop collapse(3) copy(recvbuf_l[0:end_buff],recvbuf_r[0:end_buff],state[0:end_state])
   for (ll=0; ll<NUM_VARS; ll++) {
     for (k=0; k<nz; k++) {
@@ -405,7 +404,6 @@ void set_halo_values_x( double *state ) {
   int end_hy_dens = (nz+2*hs);
   if (data_spec_int == DATA_SPEC_INJECTION) {
     if (myrank == 0) {
-      //in(state[0:end_state],hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens]) copyout(state[0:end_state])
       #pragma acc parallel loop collapse(2) copyin(hy_dens_cell[0:end_hy_dens],hy_dens_theta_cell[0:end_hy_dens]) copy(state[0:end_state]) private(z, ind_r, ind_u, ind_t)
       for (k=0; k<nz; k++) {
         for (i=0; i<hs; i++) {
