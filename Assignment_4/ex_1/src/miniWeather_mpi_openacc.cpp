@@ -405,7 +405,8 @@ void set_halo_values_x( double *state ) {
 
 
   //Unpack the receive buffers
-  #pragma acc parallel loop copyin(recvbuf_l[0:end_buff],recvbuf_r[0:end_buff]) copyout(state[0:end_state])
+  //in(recvbuf_l[0:end_buff],recvbuf_r[0:end_buff]) copyout(state[0:end_state])
+  #pragma acc parallel loop copy
   for (ll=0; ll<NUM_VARS; ll++) {
     #pragma acc loop
     for (k=0; k<nz; k++) {
@@ -422,7 +423,8 @@ void set_halo_values_x( double *state ) {
   int end_hy_dens = (nz+2*hs) - 1;
   if (data_spec_int == DATA_SPEC_INJECTION) {
     if (myrank == 0) {
-      #pragma acc parallel loop copyin(state[0:end_state],hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens]) copyout(state[0:end_state])
+      //in(state[0:end_state],hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens]) copyout(state[0:end_state])
+      #pragma acc parallel loop copy
       for (k=0; k<nz; k++) {
         #pragma acc loop
         for (i=0; i<hs; i++) {
@@ -448,7 +450,8 @@ void set_halo_values_z( double *state ) {
   const double mnt_width = xlen/8;
   double       x, xloc, mnt_deriv;
   int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
-  #pragma acc parallel loop copyin(state[0:end_state]) copyout(state[0:end_state]) 
+  //in(state[0:end_state]) copyout(state[0:end_state])
+  #pragma acc parallel loop copy 
   for (ll=0; ll<NUM_VARS; ll++) {
     #pragma acc loop
     for (i=0; i<nx+2*hs; i++) {
