@@ -390,7 +390,7 @@ void set_halo_values_x( double *state ) {
 
   //Unpack the receive buffers
   //in(recvbuf_l[0:end_buff],recvbuf_r[0:end_buff]) copyout(state[0:end_state])
-  #pragma acc parallel loop collapse(3) copy(recvbuf_l,recvbuf_r,state)
+  #pragma acc parallel loop collapse(3) copy(recvbuf_l[0:end_buff],recvbuf_r[0:end_buff],state[0:end_state])
   for (ll=0; ll<NUM_VARS; ll++) {
     for (k=0; k<nz; k++) {
       for (s=0; s<hs; s++) {
