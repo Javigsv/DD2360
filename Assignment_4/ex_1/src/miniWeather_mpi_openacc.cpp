@@ -383,7 +383,8 @@ void set_halo_values_x( double *state ) {
   int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
   int end_buff = hs*nz*NUM_VARS - 1;
   //Pack the send buffers
-  #pragma acc parallel loop copyin(state[0:end_state]) copyout(sendbuf_l[0:end_buff],sendbuf_r[0:end_buff])
+  //in(state[0:end_state]) copyout(sendbuf_l[0:end_buff],sendbuf_r[0:end_buff])
+  #pragma acc parallel loop copy(state,sendbuf_l,sendbuf_r)
   for (ll=0; ll<NUM_VARS; ll++) {
     #pragma acc loop
     for (k=0; k<nz; k++) {
@@ -406,7 +407,7 @@ void set_halo_values_x( double *state ) {
 
   //Unpack the receive buffers
   //in(recvbuf_l[0:end_buff],recvbuf_r[0:end_buff]) copyout(state[0:end_state])
-  #pragma acc parallel loop copy
+  #pragma acc parallel loop copy(recvbuf_l,recvbuf_r,state)
   for (ll=0; ll<NUM_VARS; ll++) {
     #pragma acc loop
     for (k=0; k<nz; k++) {
@@ -424,7 +425,7 @@ void set_halo_values_x( double *state ) {
   if (data_spec_int == DATA_SPEC_INJECTION) {
     if (myrank == 0) {
       //in(state[0:end_state],hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens]) copyout(state[0:end_state])
-      #pragma acc parallel loop copy
+      #pragma acc parallel loop copy(state,hy_dens_cell,hy_dens_theta_cell)
       for (k=0; k<nz; k++) {
         #pragma acc loop
         for (i=0; i<hs; i++) {
@@ -451,7 +452,7 @@ void set_halo_values_z( double *state ) {
   double       x, xloc, mnt_deriv;
   int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS - 1;
   //in(state[0:end_state]) copyout(state[0:end_state])
-  #pragma acc parallel loop copy 
+  #pragma acc parallel loop copy(state)
   for (ll=0; ll<NUM_VARS; ll++) {
     #pragma acc loop
     for (i=0; i<nx+2*hs; i++) {
