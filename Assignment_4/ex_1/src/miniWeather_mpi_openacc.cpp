@@ -242,8 +242,9 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
   int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS;
   int flux_end = (nx+1)*(nz+1)*NUM_VARS;
   int end_tend = nx*nz*NUM_VARS;
+  int end_hy_dens = (nz+2*hs);
   //Compute fluxes in the x-direction for each cell
-  #pragma acc data copyin(state[0:end_state], stencil) copy(vals, d3_vals, tend[0:end_tend], flux[0:flux_end])
+  #pragma acc data copyin(state[0:end_state], hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens],stencil) copy(vals, d3_vals, tend[0:end_tend], flux[0:flux_end])
   {
     #pragma acc parallel loop collapse(4) private(inds, r, u, w, t, p)
     for (k=0; k<nz; k++) {
@@ -303,8 +304,9 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
   int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS;
   int flux_end = (nx+1)*(nz+1)*NUM_VARS;
   int end_tend = nx*nz*NUM_VARS;
+  int end_hy_x_int = nz+1;
   //Compute fluxes in the x-direction for each cell
-  #pragma acc data copyin(state[0:end_state], stencil) copy(vals, d3_vals, tend[0:end_tend], flux[0:flux_end])
+  #pragma acc data copyin(state[0:end_state], hy_dens_int[0:end_hy_x_int], hy_dens_theta_int[0:end_hy_x_int], hy_pressure_int[0:end_hy_x_int], stencil) copy(vals, d3_vals, tend[0:end_tend], flux[0:flux_end])
   {
       #pragma acc parallel loop collapse(4) private(inds,r,u,w,t,p)
       for (k=0; k<nz+1; k++) {
@@ -368,7 +370,6 @@ void set_halo_values_x( double *state ) {
   int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS;
   int end_buff = hs*nz*NUM_VARS;
   //Pack the send buffers
-  //in(state[0:end_state]) copyout(sendbuf_l[0:end_buff],sendbuf_r[0:end_buff])
   #pragma acc parallel loop collapse(3) copy(state[0:end_state],sendbuf_l[0:end_buff],sendbuf_r[0:end_buff])
   for (ll=0; ll<NUM_VARS; ll++) {
     for (k=0; k<nz; k++) {
