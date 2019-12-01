@@ -244,9 +244,9 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
   int end_tend = nx*nz*NUM_VARS;
   int end_hy_dens = (nz+2*hs);
   //Compute fluxes in the x-direction for each cell
-  //#pragma acc data copyin(state[0:end_state], hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens]) copy(vals, d3_vals, stencil, tend[0:end_tend], flux[0:flux_end])
-  //{
-    //#pragma acc parallel loop collapse(4) private(inds, r, u, w, t, p)
+  #pragma acc data copy(state[0:end_state], hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens], vals, d3_vals, stencil, tend[0:end_tend], flux[0:flux_end])
+  {
+    #pragma acc parallel loop collapse(4) private(inds, r, u, w, t, p)
     for (k=0; k<nz; k++) {
       for (i=0; i<nx+1; i++) {
         //Use fourth-order interpolation from four cell averages to compute the value at the interface in question
@@ -277,7 +277,7 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
     }
 
     //Use the fluxes to compute tendencies for each cell
-    //#pragma acc parallel loop collapse(3) private(indt,indf1,indf2)
+    #pragma acc parallel loop collapse(3) private(indt,indf1,indf2)
     for (ll=0; ll<NUM_VARS; ll++) {
       for (k=0; k<nz; k++) {
         for (i=0; i<nx; i++) {
@@ -288,7 +288,7 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
         }
       }
     }
-  //}
+  }
 }
 
 
