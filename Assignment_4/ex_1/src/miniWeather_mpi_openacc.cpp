@@ -214,7 +214,7 @@ void semi_discrete_step( double *state_init , double *state_forcing , double *st
   int end_state = (nx+2*hs)*(nz+2*hs)*NUM_VARS;
   int end_tend = nx*nz*NUM_VARS;
   //Apply the tendencies to the fluid state
-  #pragma acc data copyin(state_init[0:end_state], tend[0:end_tend]) copy(state_out[0:end_state])
+  #pragma acc data copy(state_init[0:end_state], tend[0:end_tend], state_out[0:end_state])
   {
     #pragma acc parallel loop collapse(3) private(inds, indt)
     for (ll=0; ll<NUM_VARS; ll++) {
