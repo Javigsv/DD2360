@@ -244,7 +244,8 @@ void compute_tendencies_x( double *state , double *flux , double *tend ) {
   int end_tend = nx*nz*NUM_VARS;
   int end_hy_dens = (nz+2*hs);
   //Compute fluxes in the x-direction for each cell
-  #pragma acc data copy(state[0:end_state], hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens], vals, d3_vals, stencil, tend[0:end_tend], flux[0:flux_end])
+  //#pragma acc data copy(state[0:end_state], hy_dens_cell[0:end_hy_dens], hy_dens_theta_cell[0:end_hy_dens], vals, d3_vals, stencil, tend[0:end_tend], flux[0:flux_end])
+  #pragma acc data copy(state[0:end_state], vals, d3_vals, stencil, tend[0:end_tend], flux[0:flux_end])
   {
     #pragma acc parallel loop collapse(4) private(inds, r, u, w, t, p)
     for (k=0; k<nz; k++) {
@@ -307,7 +308,7 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
   int end_hy_x_int = nz+1;
   //Compute fluxes in the x-direction for each cell
   //#pragma acc data copy(state[0:end_state], hy_dens_int[0:end_hy_x_int], hy_dens_theta_int[0:end_hy_x_int], hy_pressure_int[0:end_hy_x_int], vals, d3_vals, stencil, tend[0:end_tend], flux[0:flux_end], hv_coef)
-  #pragma acc parallel loop collapse(4) private(inds, r, u, w, t, p) copy(state[0:end_state], hy_dens_int[0:end_hy_x_int], hy_dens_theta_int[0:end_hy_x_int], hy_pressure_int[0:end_hy_x_int], vals, d3_vals, stencil, flux[0:flux_end])
+  //#pragma acc parallel loop collapse(4) private(inds, r, u, w, t, p) copy(state[0:end_state], hy_dens_int[0:end_hy_x_int], hy_dens_theta_int[0:end_hy_x_int], hy_pressure_int[0:end_hy_x_int], vals, d3_vals, stencil, flux[0:flux_end])
   for (k=0; k<nz+1; k++) {
     for (i=0; i<nx; i++) {
       //Use fourth-order interpolation from four cell averages to compute the value at the interface in question
