@@ -312,7 +312,7 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
   for (k=0; k<nz+1; k++) {
     #pragma acc parallel loop private(r, u, w, t, p)
     for (i=0; i<nx; i++) {
-       #pragma acc parallel loop
+      #pragma acc parallel loop
       for (ll=0; ll<NUM_VARS; ll++) {
         #pragma acc parallel loop private(inds)
         for (s=0; s<sten_size; s++) {
