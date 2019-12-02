@@ -308,13 +308,13 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
   //Compute fluxes in the x-direction for each cell
   //#pragma acc data copy(state[0:end_state], hy_dens_int[0:end_hy_x_int], hy_dens_theta_int[0:end_hy_x_int], hy_pressure_int[0:end_hy_x_int], vals, d3_vals, stencil, tend[0:end_tend], flux[0:flux_end], hv_coef)
   //#pragma acc parallel loop collapse(4) private(inds, r, u, w, t, p) copy(state[0:end_state], hy_dens_int[0:end_hy_x_int], hy_dens_theta_int[0:end_hy_x_int], hy_pressure_int[0:end_hy_x_int], vals, d3_vals, stencil, flux[0:flux_end], hv_coef)
-  #pragma acc parallel loop copy(state[0:end_state], hy_dens_int[0:end_hy_x_int], hy_dens_theta_int[0:end_hy_x_int], hy_pressure_int[0:end_hy_x_int], vals, d3_vals, stencil, flux[0:flux_end], hv_coef)
+  #pragma acc parallel loop private(inds, r, u, w, t, p) copy(state[0:end_state], hy_dens_int[0:end_hy_x_int], hy_dens_theta_int[0:end_hy_x_int], hy_pressure_int[0:end_hy_x_int], vals, d3_vals, stencil, flux[0:flux_end], hv_coef)
   for (k=0; k<nz+1; k++) {
-    #pragma acc parallel loop private(r, u, w, t, p)
+    #pragma acc loop
     for (i=0; i<nx; i++) {
-      #pragma acc parallel loop
+      #pragma acc loop
       for (ll=0; ll<NUM_VARS; ll++) {
-        #pragma acc parallel loop private(inds)
+        #pragma acc loop
         for (s=0; s<sten_size; s++) {
           inds = ll*(nz+2*hs)*(nx+2*hs) + (k+s)*(nx+2*hs) + i+hs;
           stencil[s] = state[inds];
