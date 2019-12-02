@@ -310,7 +310,6 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
   #pragma acc parallel loop collapse(4) private(inds, r, u, w, t, p) copy(state[0:end_state], hy_dens_int[0:end_hy_x_int], hy_dens_theta_int[0:end_hy_x_int], hy_pressure_int[0:end_hy_x_int], vals, d3_vals, stencil, flux[0:flux_end], hv_coef)
   for (k=0; k<nz+1; k++) {
     for (i=0; i<nx; i++) {
-      //Use fourth-order interpolation from four cell averages to compute the value at the interface in question
       for (ll=0; ll<NUM_VARS; ll++) {
         for (s=0; s<sten_size; s++) {
           inds = ll*(nz+2*hs)*(nx+2*hs) + (k+s)*(nx+2*hs) + i+hs;
