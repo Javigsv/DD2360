@@ -337,7 +337,7 @@ void compute_tendencies_z( double *state , double *flux , double *tend ) {
   }
 
   //Use the fluxes to compute tendencies for each cell
-  #pragma acc parallel loop collapse(3) private(indt, indf1, indf2, inds) copy(tend[:end_tend], flux[:flux_end], state[:end_state])
+  #pragma acc parallel loop collapse(3) private(indt, indf1, indf2, inds) copy(tend[:end_tend], state[:end_state]) copyin(flux[:flux_end])
   for (ll=0; ll<NUM_VARS; ll++) {
     for (k=0; k<nz; k++) {
       for (i=0; i<nx; i++) {
